@@ -3,7 +3,27 @@ import cv2
 import numpy as np
 import requests
 import time
+from pyproj import Proj, transform
 
+def calculateLeftCorner(latitude, longitude, side_length):
+    # Преобразование широты и долготы в метры функция некорректная надо искать нормальную формулу
+    # непонятно надо ли делить на 1000 - переводить метры в километры
+    bias_lat = 1 / 111111
+    bias_lon = 1 / (111111 * math.cos(math.radians(latitude)))
+    side_length = (side_length / 1000) * 0.5
+    left_corner_latitude = latitude - side_length * bias_lat
+    left_corner_longitude = longitude - side_length * bias_lon
+    print(left_corner_latitude, left_corner_longitude)
+    return left_corner_latitude, left_corner_longitude
+
+def calculateRightCorner(latitude, longitude, side_length):
+    bias_lat = 1 / 111111
+    bias_lon = 1 / (111111 * math.cos(math.radians(latitude)))
+    side_length = (side_length / 1000) * 0.5
+    right_corner_latitude = latitude - side_length * bias_lat
+    right_corner_longitude = longitude - side_length * bias_lon
+    print(right_corner_latitude, right_corner_longitude)
+    return right_corner_latitude, right_corner_longitude
 
 def calculatePixelPosition(latitude, longitude, level):
     map_size = 256 * 2 ** level
@@ -14,6 +34,7 @@ def calculatePixelPosition(latitude, longitude, level):
     pixel_y = (0.5 - math.log((1 + sin_latitude) / (1 - sin_latitude)) / (4 * math.pi)) * map_size
     pixel_x = min(max(pixel_x, 0), map_size - 1)
     pixel_y = min(max(pixel_y, 0), map_size - 1)
+    print(pixel_x, pixel_y)
     return (int(pixel_x), int(pixel_y))  #
 
 
@@ -123,10 +144,14 @@ if __name__ == '__main__':
     print("\n Ground Resolution:")
     print(" ==================")
     # print(" Level ( 1 - 23 ): ", end="")
-    p1_latitude = 31.885375
-    p1_longitude = 34.960959
-    p2_latitude = 31.885385
-    p2_longitude = 34.960969
+    # p1_latitude = 31.885375
+    # p1_longitude = 34.960959
+    # p2_latitude = 31.885385
+    # p2_longitude = 34.960969
+    center_latitude = 31.885375
+    center_longitude = 34.960959
+    p1_latitude, p1_longitude = calculateLeftCorner(center_latitude, center_longitude, 100)
+    p2_latitude, p2_longitude = calculateRightCorner(center_latitude, center_longitude, 100)
 
     # level = int(input())
     "appropriate level - 16, 14 "
@@ -141,6 +166,7 @@ if __name__ == '__main__':
     print("-----------------------------------------------------------------------")
     p1 = calculatePixelPosition(p1_latitude, p1_longitude, level)
     p2 = calculatePixelPosition(p2_latitude, p2_longitude, level)
+    print(p1,p2)
     t1 = calculateTilePosition(p1)
     t2 = calculateTilePosition(p2)
     p1, p2, t1, t2 = validateInput(p1, p2, t1, t2)
