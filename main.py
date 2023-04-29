@@ -3,25 +3,31 @@ import cv2
 import numpy as np
 import requests
 import time
-from pyproj import Proj, transform
-
+import os
+import math
 def calculateLeftCorner(latitude, longitude, side_length):
     # Преобразование широты и долготы в метры функция некорректная надо искать нормальную формулу
     # непонятно надо ли делить на 1000 - переводить метры в километры
-    bias_lat = 1 / 111111
-    bias_lon = 1 / (111111 * math.cos(math.radians(latitude)))
-    side_length = (side_length / 1000) * 0.5
-    left_corner_latitude = latitude - side_length * bias_lat
-    left_corner_longitude = longitude - side_length * bias_lon
+    r_earth = 6378
+    left_corner_latitude = latitude - (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi)
+    left_corner_longitude = longitude - (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi) / math.cos(latitude * math.pi / 180)
+    # bias_lat = 1 / 111111
+    # bias_lon = 1 / (111111 * math.cos(math.radians(latitude)))
+    # side_length = (side_length / 1000) * 0.5
+    # left_corner_latitude = latitude - side_length * bias_lat
+    # left_corner_longitude = longitude - side_length * bias_lon
     print(left_corner_latitude, left_corner_longitude)
     return left_corner_latitude, left_corner_longitude
 
 def calculateRightCorner(latitude, longitude, side_length):
-    bias_lat = 1 / 111111
-    bias_lon = 1 / (111111 * math.cos(math.radians(latitude)))
-    side_length = (side_length / 1000) * 0.5
-    right_corner_latitude = latitude - side_length * bias_lat
-    right_corner_longitude = longitude - side_length * bias_lon
+    r_earth = 6378
+    right_corner_latitude = latitude + (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi)
+    right_corner_longitude = longitude + (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi) / math.cos(latitude * math.pi / 180)
+    # bias_lat = 1 / 111111
+    # bias_lon = 1 / (111111 * math.cos(math.radians(latitude)))
+    # side_length = (side_length / 1000) * 0.5
+    # right_corner_latitude = latitude - side_length * bias_lat
+    # right_corner_longitude = longitude - side_length * bias_lon
     print(right_corner_latitude, right_corner_longitude)
     return right_corner_latitude, right_corner_longitude
 
@@ -39,8 +45,10 @@ def calculatePixelPosition(latitude, longitude, level):
 
 
 def calculateTilePosition(pixel_position):
-    tile_x = math.floor(pixel_position[0] / 256.0)
-    tile_y = math.floor(pixel_position[1] / 256.0)
+    # tile_x = math.floor(pixel_position[0] / 256.0)
+    # tile_y = math.floor(pixel_position[1] / 256.0)
+    tile_x = math.floor(1 * pixel_position[0] / 256.0)
+    tile_y = math.floor(1 * pixel_position[1] / 256.0)
     return (int(tile_x), int(tile_y))
 
 
@@ -139,38 +147,29 @@ def validateInput(p1, p2, t1, t2):
 
 if __name__ == '__main__':
     print("-----------------------------------------------------------------------")
-    print(" Enter Upper Left Corner Coordinates:")
-    print(" ==================")
-    print("\n Ground Resolution:")
-    print(" ==================")
-    # print(" Level ( 1 - 23 ): ", end="")
-    # p1_latitude = 31.885375
-    # p1_longitude = 34.960959
-    # p2_latitude = 31.885385
-    # p2_longitude = 34.960969
+    coordinatesDict = {
+        "first_image": [31.45678, 34.5678],
+    }
     center_latitude = 31.885375
     center_longitude = 34.960959
     p1_latitude, p1_longitude = calculateLeftCorner(center_latitude, center_longitude, 100)
     p2_latitude, p2_longitude = calculateRightCorner(center_latitude, center_longitude, 100)
 
-    # level = int(input())
-    "appropriate level - 16, 14 "
-    level = int(16)
+    "appropriate level - 19,18,17,16,14.... "
+    level = int(19)
     print("\n Output Filename:")
     print(" ==================")
-    print(" Filename (filename.jpg): ", end="")
-    filename = "test" + str(input() + '.jpg')
-    print("-----------------------------------------------------------------------")
-
     print(" Downloading and cropping satellite imagery...")
-    print("-----------------------------------------------------------------------")
     p1 = calculatePixelPosition(p1_latitude, p1_longitude, level)
     p2 = calculatePixelPosition(p2_latitude, p2_longitude, level)
     print(p1,p2)
     t1 = calculateTilePosition(p1)
     t2 = calculateTilePosition(p2)
     p1, p2, t1, t2 = validateInput(p1, p2, t1, t2)
-
+    if not os.path.exists("output"):
+        os.makedirs("output")
+    print(" Filename (filename.jpg): ", end="")
+    filename = "output/" + "test" + str(input() + '.jpg')
     image = downloadAerialImagery(t1, t2, filename)
     print(" Stitching tiles into one final image... ")
     print("-----------------------------------------------------------------------")
@@ -179,3 +178,13 @@ if __name__ == '__main__':
     print("-----------------------------------------------------------------------")
     print(" ", filename, " has ben created!")
     print("-----------------------------------------------------------------------\n\n")
+
+
+"""
+thisdict = {
+  "name": [31.45678, 34.5678],
+}
+print(thisdict["name"][1])
+
+
+"""
