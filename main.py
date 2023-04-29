@@ -1,10 +1,11 @@
-import math
 import cv2
 import numpy as np
 import requests
 import time
 import os
 import math
+import multiprocessing
+from tqdm import tqdm
 def calculateLeftCorner(latitude, longitude, side_length):
     """ Need to check the formula """
     r_earth = 6378
@@ -150,12 +151,14 @@ def validateInput(p1, p2, t1, t2):
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+    print(f'CPU cores quantity : {os.cpu_count()}')
     coordinatesDict = {
         "location1": [31.45678, 34.5678],
         "location2": [32.12345, 35.6789],
         "location3": [33.98765, 36.7890]
     }
-    for name, coords in coordinatesDict.items():
+    for name, coords in tqdm(coordinatesDict.items()):
         print(coords[0])
         p1_latitude, p1_longitude = calculateLeftCorner(coords[0], coords[1], 100)
         p2_latitude, p2_longitude = calculateLeftCorner(coords[0], coords[1], 100)
@@ -184,4 +187,4 @@ if __name__ == '__main__':
         print("-----------------------------------------------------------------------")
         print(" ", name, " has ben created!")
         print("-----------------------------------------------------------------------\n\n")
-
+    print("--- %s seconds ---" % (time.time() - start_time))
