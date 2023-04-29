@@ -6,8 +6,7 @@ import time
 import os
 import math
 def calculateLeftCorner(latitude, longitude, side_length):
-    # Преобразование широты и долготы в метры функция некорректная надо искать нормальную формулу
-    # непонятно надо ли делить на 1000 - переводить метры в километры
+    """ Need to check the formula """
     r_earth = 6378
     left_corner_latitude = latitude - (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi)
     left_corner_longitude = longitude - (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi) / math.cos(latitude * math.pi / 180)
@@ -20,6 +19,12 @@ def calculateLeftCorner(latitude, longitude, side_length):
     return left_corner_latitude, left_corner_longitude
 
 def calculateRightCorner(latitude, longitude, side_length):
+    """
+    Parameters in function calculateLeftCorner / calculateRightCorner :
+        1 - center point latitude coordinate
+        2 - center point longitude coordinate
+        3 - bias for bounding box in metres
+    """
     r_earth = 6378
     right_corner_latitude = latitude + (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi)
     right_corner_longitude = longitude + (side_length * 0.5) / (r_earth * 1000) * (180 / math.pi) / math.cos(latitude * math.pi / 180)
@@ -40,13 +45,11 @@ def calculatePixelPosition(latitude, longitude, level):
     pixel_y = (0.5 - math.log((1 + sin_latitude) / (1 - sin_latitude)) / (4 * math.pi)) * map_size
     pixel_x = min(max(pixel_x, 0), map_size - 1)
     pixel_y = min(max(pixel_y, 0), map_size - 1)
-    print(pixel_x, pixel_y)
-    return (int(pixel_x), int(pixel_y))  #
+    # print(pixel_x, pixel_y)
+    return (int(pixel_x), int(pixel_y))
 
 
 def calculateTilePosition(pixel_position):
-    # tile_x = math.floor(pixel_position[0] / 256.0)
-    # tile_y = math.floor(pixel_position[1] / 256.0)
     tile_x = math.floor(1 * pixel_position[0] / 256.0)
     tile_y = math.floor(1 * pixel_position[1] / 256.0)
     return (int(tile_x), int(tile_y))
@@ -70,8 +73,7 @@ def calculateQuadKey(tile_position, level):
 
 
 def downloadImage(quad_key):
-    """ If you want to receive photo with labels - tiles/h, without - use tiles/a"""
-    # url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a' + quad_key + ".jpeg?g=131"
+    """ If you want to receive photo with labels - tiles/h, without - use tiles/a """
     url = 'http://h0.ortho.tiles.virtualearth.net/tiles/a' + quad_key + ".jpeg?g=131"
     print("Quad Key: " + quad_key + "\t| Tile URL: " + url)
 
@@ -94,7 +96,9 @@ def downloadAerialImagery(upper_left_tile, lower_right_tile, filename):
                 image = downloadImage(quad_key)
                 if image is None or image.shape[0] == 0 or image.shape[1] == 0:
                     print("Failed to download or load image for Quad Key:", quad_key)
-                    # Add a delay before retrying to avoid continuous retries
+                    """
+                        Add a delay before retrying to avoid continuous retries
+                    """
                     time.sleep(1)
             tilename = tilename + str(tiles) + ".jpg"
             cv2.imwrite(tilename, image)
@@ -146,45 +150,38 @@ def validateInput(p1, p2, t1, t2):
 
 
 if __name__ == '__main__':
-    print("-----------------------------------------------------------------------")
     coordinatesDict = {
-        "first_image": [31.45678, 34.5678],
+        "location1": [31.45678, 34.5678],
+        "location2": [32.12345, 35.6789],
+        "location3": [33.98765, 36.7890]
     }
-    center_latitude = 31.885375
-    center_longitude = 34.960959
-    p1_latitude, p1_longitude = calculateLeftCorner(center_latitude, center_longitude, 100)
-    p2_latitude, p2_longitude = calculateRightCorner(center_latitude, center_longitude, 100)
+    for name, coords in coordinatesDict.items():
+        print(coords[0])
+        p1_latitude, p1_longitude = calculateLeftCorner(coords[0], coords[1], 100)
+        p2_latitude, p2_longitude = calculateLeftCorner(coords[0], coords[1], 100)
 
-    "appropriate level - 19,18,17,16,14.... "
-    level = int(19)
-    print("\n Output Filename:")
-    print(" ==================")
-    print(" Downloading and cropping satellite imagery...")
-    p1 = calculatePixelPosition(p1_latitude, p1_longitude, level)
-    p2 = calculatePixelPosition(p2_latitude, p2_longitude, level)
-    print(p1,p2)
-    t1 = calculateTilePosition(p1)
-    t2 = calculateTilePosition(p2)
-    p1, p2, t1, t2 = validateInput(p1, p2, t1, t2)
-    if not os.path.exists("output"):
-        os.makedirs("output")
-    print(" Filename (filename.jpg): ", end="")
-    filename = "output/" + "test" + str(input() + '.jpg')
-    image = downloadAerialImagery(t1, t2, filename)
-    print(" Stitching tiles into one final image... ")
-    print("-----------------------------------------------------------------------")
-    image = cropAerialImagery(image, p1, p2, filename)
-    print(" Finished processing satellite imagery.")
-    print("-----------------------------------------------------------------------")
-    print(" ", filename, " has ben created!")
-    print("-----------------------------------------------------------------------\n\n")
+        """
+        appropriate level - 19,18,17,16,14.... "
+        """
+        level = int(19)
+        print("\n Output Filename:")
+        print(" ==================")
+        print(" Downloading and cropping satellite imagery...")
+        p1 = calculatePixelPosition(p1_latitude, p1_longitude, level)
+        p2 = calculatePixelPosition(p2_latitude, p2_longitude, level)
+        t1 = calculateTilePosition(p1)
+        t2 = calculateTilePosition(p2)
+        p1, p2, t1, t2 = validateInput(p1, p2, t1, t2)
+        if not os.path.exists("output"):
+            os.makedirs("output")
+        print(" Filename:", name , end="")
+        filename = "output/" + name + '.jpg'
+        image = downloadAerialImagery(t1, t2, filename)
+        print(" Stitching tiles into one final image... ")
+        print("-----------------------------------------------------------------------")
+        image = cropAerialImagery(image, p1, p2, filename)
+        print(" Finished processing satellite imagery.")
+        print("-----------------------------------------------------------------------")
+        print(" ", name, " has ben created!")
+        print("-----------------------------------------------------------------------\n\n")
 
-
-"""
-thisdict = {
-  "name": [31.45678, 34.5678],
-}
-print(thisdict["name"][1])
-
-
-"""
